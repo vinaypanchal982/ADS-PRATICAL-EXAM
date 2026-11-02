@@ -1,0 +1,740 @@
+================================================================================
+          DATA ENGINEERING & MACHINE LEARNING PRACTICAL LAB MANUAL
+================================================================================
+TABLE OF CONTENTS:
+--------------------------------------------------------------------------------
+PHASE 1: DATA INGESTION & INTEGRATION
+  1. P.1.A - CSV Ingestion to HORUS
+  2. P.1.B - Image Ingestion to HORUS
+  3. P.1.C - Audio Ingestion to HORUS
+  4. DataHub System Architecture Overview
+
+PHASE 2: DATA CLEANING & TEXT/DATE FORMATTING
+  5. P.2.A - Removing Leading & Trailing Spaces
+  6. P.2.B - Removing Non-Printable Strings
+  7. P.2.C - Date Formatting & Parsing
+
+PHASE 3: DATA ANALYSIS & STATISTICAL AGGREGATION
+  8. P.3.A - Equal Width Data Binning
+  9. P.3.B - Group Aggregation & Averaging Data
+ 10. P.3.C - Outlier Detection using IQR Method
+
+PHASE 4: PIPELINE LOGGING & DATA PROVENANCE
+ 11. Practical 4A - Basic Execution Logging
+ 12. Practical 4B - Data Provenance & Lineage Tracking
+
+PHASE 5: DATA IMPUTATION & OUTLIER HANDLING
+ 13. Practical 5A - Missing Value Imputation (Mean Imputation)
+ 14. Practical 5B - Outlier Handling using Z-Score Method
+
+PHASE 6: FEATURE SCALING, TRANSFORMATION & NORMALIZATION
+ 15. Practical 6A - Min-Max Normalization
+ 16. Practical 6B - Feature Transformation Techniques
+
+PHASE 7: STATISTICAL HYPOTHESIS TESTING
+ 17. Practical 7A - One-Sample t-Test
+ 18. Practical 7B - Two-Sample Independent t-Test
+
+PHASE 8: UNSUPERVISED LEARNING & DIMENSIONALITY REDUCTION
+ 19. Practical 8B - K-Means Clustering Implementation
+ 20. Practical 9A - Principal Component Analysis (PCA)
+
+PHASE 9: SUPERVISED MACHINE LEARNING & CLASSIFICATION
+ 21. Practical 8A - Logistic Regression with Decision Boundary
+ 22. Practical 9B - Support Vector Machine (SVM) with GridSearch Tuning
+
+================================================================================
+PHASE 1: DATA INGESTION & INTEGRATION
+================================================================================
+
+--- Practical 1.A: CSV to HORUS Format ---
+import pandas as pd
+
+# Input File
+input_file = "/content/Country_Codes.csv"
+
+# Read CSV file
+df = pd.read_csv(input_file, encoding="latin1")
+
+print("========== Input Data ==========")
+print(df)
+print("================================")
+
+# Data Processing
+processed_df = df.copy()
+
+# Remove unwanted columns
+processed_df.drop(columns=["ISO-2-CODE", "ISO-3-Code"], inplace=True)
+
+# Rename columns
+processed_df.rename(columns={
+    "Country": "CountryName",
+    "ISO-M49": "CountryNumber"
+}, inplace=True)
+
+# Set CountryNumber as index
+processed_df.set_index("CountryNumber", inplace=True)
+
+# Sort by CountryName in descending order
+processed_df.sort_values(by="CountryName", ascending=False, inplace=True)
+
+print("\n========== Processed Data ==========")
+print(processed_df)
+print("====================================")
+
+# Save Output
+output_file = "output.csv"
+processed_df.to_csv(output_file)
+
+print(f"\nConversion completed successfully!")
+print(f"Output saved as: {output_file}")
+
+
+--- Practical 1.B: IMAGE to HORUS Format ---
+from skimage import io
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Input Agreement
+sInputFile = r"/content/Image.png"
+data = io.imread(sInputFile)
+
+plt.imshow(data)
+plt.title("Input Image")
+plt.axis('off')
+plt.show()
+
+print('Input Data')
+print('Height (X):', data.shape[0])
+print('Width  (Y):', data.shape[1])
+print('Channels :', data.shape[2])
+
+# Processing Rules
+height, width, _ = data.shape
+rows = []
+
+for x in range(height):
+    for y in range(width):
+        r, g, b, a = data[x, y]
+        rows.append([x, y, r, g, b, a])
+
+process = pd.DataFrame(rows, columns=['XAxis', 'YAxis', 'Red', 'Green', 'Blue', 'Alpha'])
+print(process.head())
+print('Rows: ', process.shape[0])
+print('Columns: ', process.shape[1])
+
+# Output Agreement
+sOutputFile = "HORUS-IMG.csv"
+process.to_csv(sOutputFile, index=False)
+print('Image to HORUS - Done')
+
+
+--- Practical 1.C: AUDIO to HORUS Format ---
+from scipy.io import wavfile
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Input
+file = r"/content/Audio.wav"
+print('Processing:', file)
+
+InputRate, InputData = wavfile.read(file)
+
+# Processing
+if InputData.ndim == 2 and InputData.shape[1] == 2:
+    ProcessData = pd.DataFrame(InputData, columns=['Ch1', 'Ch2'])
+else:
+    ProcessData = pd.DataFrame(InputData, columns=['Ch1'])
+
+print("First few records (HORUS Audio Format):")
+print(ProcessData.head())
+
+# Output
+OutputFile = r"Audio_HORUS_Output.csv"
+ProcessData.to_csv(OutputFile, index=False)
+print('Audio to HORUS - Done')
+
+
+================================================================================
+PHASE 2: DATA CLEANING & TEXT/DATE FORMATTING
+================================================================================
+
+--- Practical 2.A: Removing Leading & Trailing Spaces ---
+# P.2.A Removing Leading & trailing Spaces
+data = "   Data Science !!!   "
+print('>', data, '<')
+cleandata = data.strip()
+print('>', cleandata, '<')
+
+
+--- Practical 2.B: Removing Non-Printable Strings ---
+# P.2.B Removing Non-Printable String
+import string
+data = "Data\x00Science and\x02 ML is \x10fun!!!"
+clean = ''.join(filter(lambda x: x in string.printable, data))
+print(clean)
+
+
+--- Practical 2.C: Formatting Date ---
+# P.2.C Formatting Date
+import datetime as dt
+date = dt.date(2026, 7, 8)
+date = format(date, '%Y-%m-%d')
+print(date)
+
+fdate = dt.datetime.strptime(date, '%Y-%m-%d')
+fdate = format(fdate, '%d %B %Y')
+print(fdate)
+
+
+================================================================================
+PHASE 3: DATA ANALYSIS & STATISTICAL AGGREGATION
+================================================================================
+
+--- Practical 3.A: Data Binning ---
+# P.3.A Data Binning
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# File path
+sInputFile = "/content/IP_Data_Core.csv"
+
+# Load dataset
+df = pd.read_csv(sInputFile)
+
+print("First 5 Records")
+print(df.head())
+
+# Equal Width Binning
+df["Latitude_Bin"] = pd.cut(
+    df["Latitude"],
+    bins=5,
+    labels=["Very Low", "Low", "Medium", "High", "Very High"]
+)
+
+print("\nBin Counts:")
+print(df["Latitude_Bin"].value_counts().sort_index())
+
+# Graph
+df["Latitude_Bin"].value_counts().sort_index().plot(
+    kind="bar",
+    figsize=(8, 5),
+    edgecolor="black",
+    color="skyblue"
+)
+
+plt.title("Equal Width Binning of Latitude")
+plt.xlabel("Latitude Bins")
+plt.ylabel("Frequency")
+plt.xticks(rotation=0)
+plt.grid(axis="y")
+plt.show()
+
+
+--- Practical 3.B: Averaging of Data ---
+# P.3.B Averaging of Data
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# File path
+sInputFile = "/content/IP_Data_Core.csv"
+
+# Load dataset
+df = pd.read_csv(sInputFile)
+
+print("First 5 Records")
+print(df.head())
+
+# Group by Country
+avg_data = df.groupby("Country")[["Latitude", "Longitude"]].mean()
+
+print("\nAverage Latitude and Longitude")
+print(avg_data)
+
+
+--- Practical 3.C: Outlier Detection (IQR Method) ---
+# P.3.C Outlier Detection
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# File path
+sInputFile = "/content/IP_Data_Core.csv"
+
+# Load dataset
+df = pd.read_csv(sInputFile)
+
+feature = "Longitude"
+
+# Calculate Quartiles
+Q1 = df[feature].quantile(0.25)
+Q3 = df[feature].quantile(0.75)
+
+IQR = Q3 - Q1
+
+lower = Q1 - 1.5 * IQR
+upper = Q3 + 1.5 * IQR
+
+print("Q1 :", Q1)
+print("Q3 :", Q3)
+print("IQR:", IQR)
+print("Lower Bound:", lower)
+print("Upper Bound:", upper)
+
+# Detect Outliers
+outliers = df[(df[feature] < lower) | (df[feature] > upper)]
+
+print("\nNumber of Outliers:", len(outliers))
+print("\nOutlier Records")
+print(outliers)
+
+
+================================================================================
+PHASE 4: PIPELINE LOGGING & DATA PROVENANCE
+================================================================================
+
+--- Practical 4A: Basic Logging Setup ---
+# Practical 4A
+import logging
+
+# Setup logging
+logging.basicConfig(filename='basic_logging.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def run_process():
+    logging.info("Process started.")
+    try:
+        # Simulated data loading
+        data = [1, 2, 3]
+        logging.info("Data loaded successfully.")
+        
+        # Simulated processing
+        result = [x**2 for x in data]
+        logging.info(f"Processing complete: {result}")
+        
+    except Exception as e:
+        logging.error(f"Error during processing: {e}")
+    finally:
+        logging.info("Process finished.")
+    print("Logging completed")
+
+run_process()
+
+
+--- Practical 4B: Data Provenance Tracking ---
+# Practical 4B
+import pandas as pd
+from datetime import datetime
+
+# Simulated data
+df = pd.DataFrame({
+    'Customer_ID': [101, 102, 103],
+    'Tenure': [12, 24, 36]
+})
+
+# Record original source
+provenance_log = []
+
+# Transformation
+df['tenure_bucket'] = pd.cut(df['Tenure'], bins=[0, 18, 36], labels=['Short', 'Medium'])
+
+# Record provenance
+for col in ['tenure_bucket']:
+    provenance_log.append({
+        'Data_Entity': col,
+        'Source_Table': 'Customer_Data',
+        'Transformation_Step': 'Binning from numeric column',
+        'Timestamp': datetime.now()
+    })
+
+# Display final transformed DataFrame
+print(" Final Transformed Data:")
+print(df)
+
+# Save final data to CSV
+df.to_csv("transformed_customer_data.csv", index=False)
+
+# Output provenance log as DataFrame
+provenance_df = pd.DataFrame(provenance_log)
+print("\n Provenance Log:")
+print(provenance_df)
+
+# Save provenance log to CSV
+provenance_df.to_csv("provenance_log.csv", index=False)
+
+
+================================================================================
+PHASE 5: DATA IMPUTATION & OUTLIER HANDLING
+================================================================================
+
+--- Practical 5A: Mean Imputation ---
+# Practical 5A: Handling Missing Values with Mean Imputation
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Step 1: Create data with missing values
+np.random.seed(42)
+marks = np.random.randint(20, 100, size=20).astype(float)
+marks[[2, 5, 11, 15, 19]] = np.nan
+
+df = pd.DataFrame({'Marks': marks})
+print("Original Data with Missing Values:")
+print(df)
+
+# Step 2: Fill missing values using mean
+df_filled = df.fillna(df['Marks'].mean())
+print("\n Data After Mean Imputation:")
+print(df_filled)
+
+# Step 3: Plot before and after side by side
+fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+
+sns.histplot(df['Marks'], kde=False, ax=ax[0])
+ax[0].set_title("Before Mean Imputation")
+ax[0].set_xlabel("Marks")
+
+sns.histplot(df_filled['Marks'], kde=False, ax=ax[1])
+ax[1].set_title("After Mean Imputation")
+ax[1].set_xlabel("Marks")
+
+plt.tight_layout()
+plt.show()
+
+
+--- Practical 5B: Z-Score Outlier Removal ---
+# Practical 5B: Handling Outliers using Z-Score Method (for normal distribution)
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
+
+# Step 1: Generate normally distributed data
+np.random.seed(202)
+normal_data = np.random.normal(loc=50, scale=10, size=100)
+df = pd.DataFrame({'Value': normal_data})
+
+# Step 2: Calculate Z-scores and remove outliers
+z_scores = np.abs(stats.zscore(df['Value']))
+df_filtered = df[z_scores < 3]
+
+# Step 3: Plot side-by-side histograms
+fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+
+sns.histplot(df['Value'], kde=True, ax=ax[0])
+ax[0].set_title("Before Removing Outliers")
+
+sns.histplot(df_filtered['Value'], kde=True, ax=ax[1])
+ax[1].set_title("After Removing Outliers (Z-score Method)")
+
+plt.tight_layout()
+plt.show()
+
+
+================================================================================
+PHASE 6: FEATURE SCALING, TRANSFORMATION & NORMALIZATION
+================================================================================
+
+--- Practical 6A: Min-Max Scaling ---
+# P.6.A Implement Normalization using Min-Max Scaling
+import pandas as pd
+from sklearn.datasets import load_wine
+
+# Load the dataset
+wine = load_wine(as_frame=True)
+df = wine.frame
+
+# Min-Max Normalization Function
+def min_max_normalize(column):
+    return (column - column.min()) / (column.max() - column.min())
+
+# Apply normalization on continuous columns
+df['alcohol_norm'] = min_max_normalize(df['alcohol'])
+df['malic_acid_norm'] = min_max_normalize(df['malic_acid'])
+
+# Display original and normalized values
+print(df[['alcohol', 'alcohol_norm', 'malic_acid', 'malic_acid_norm']].head())
+
+
+--- Practical 6B: Advanced Feature Transformations ---
+# P.6.B.Implement Feature Transformation
+import pandas as pd
+import numpy as np
+from scipy import stats
+from sklearn.datasets import load_wine
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
+# 1. Load the dataset
+wine = load_wine(as_frame=True)
+df = wine.frame[['alcohol', 'malic_acid', 'proline']].copy()
+
+# 2. Min-Max Scaling (Rescale to range [0, 1])
+scaler_minmax = MinMaxScaler()
+df['malic_acid_minmax'] = scaler_minmax.fit_transform(df[['malic_acid']])
+
+# 3. Standard Scaling
+scaler_standard = StandardScaler()
+df['proline_std'] = scaler_standard.fit_transform(df[['proline']])
+
+# 4. Log Transformation (Reduces right-skewness)
+df['malic_acid_log'] = np.log(df['malic_acid'])
+
+# 5. Box-Cox Transformation (Transforms data to follow a normal distribution)
+df['proline_boxcox'], _ = stats.boxcox(df['proline'])
+
+# Display original and transformed features
+print(df.head())
+
+
+================================================================================
+PHASE 7: STATISTICAL HYPOTHESIS TESTING
+================================================================================
+
+--- Practical 7A: One-Sample t-Test ---
+# Practical 7A
+# One Sample t-Test
+# Example: Is the average weight significantly different from 70?
+from scipy import stats
+
+# Sample data
+weights = [68, 72, 71, 69, 75, 70, 74, 73]
+
+# Hypotheses
+# H0: mu = 70 (mean is 70)
+# H1: mu != 70 (mean is not 70)
+
+# Perform one-sample t-test
+t_stat, p_value = stats.ttest_1samp(weights, popmean=70)
+
+print(f"T-statistic: {t_stat:.4f}")
+print(f"P-value: {p_value:.4f}")
+
+# Interpret result
+if p_value < 0.05:
+    print("Reject H0: There is a significant difference from the mean 70.")
+else:
+    print("Fail to reject H0: No significant difference from the mean 70.")
+
+
+--- Practical 7B: Two-Sample Independent t-Test ---
+# Practical 7B
+# Two-Sample t-Test
+# Example: Compare test scores of two different classes
+from scipy import stats
+
+# Two sample groups
+group1 = [80, 85, 78, 90, 88]
+group2 = [75, 70, 80, 78, 72]
+
+# Hypotheses
+# H0: mu1 = mu2 (means of both groups are equal)
+# H1: mu1 != mu2 (means are different)
+
+# Perform two-sample t-test (independent samples)
+t_stat, p_value = stats.ttest_ind(group1, group2)
+
+print(f"T-statistic: {t_stat:.4f}")
+print(f"P-value: {p_value:.4f}")
+
+# Interpret result
+if p_value < 0.05:
+    print("Reject H0: There is a significant difference between the two groups.")
+else:
+    print("Fail to reject H0: No significant difference between the two groups.")
+
+
+================================================================================
+PHASE 8: UNSUPERVISED LEARNING & DIMENSIONALITY REDUCTION
+================================================================================
+
+--- Practical 8B: K-Means Clustering ---
+# 8B: Implement K-Means Clustering
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_blobs
+from sklearn.cluster import KMeans
+
+# 1. Generate synthetic dataset with 4 distinct clusters
+X, _ = make_blobs(n_samples=400, centers=4, cluster_std=0.8, random_state=42)
+
+# 2. Initialize and fit K-Means model (k=4)
+k = 4
+kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+kmeans.fit(X)
+
+# 3. Get cluster centers and labels
+centroids = kmeans.cluster_centers_
+labels = kmeans.labels_
+
+print("--- K-Means Clustering Summary ---")
+print(f"Number of clusters (k): {k}")
+print("\nCluster Centroids:")
+for i, center in enumerate(centroids):
+    print(f"Cluster {i+1} Center: [{center[0]:.4f}, {center[1]:.4f}]")
+
+# 4. Visualize the clusters and centroids
+plt.figure(figsize=(8, 5))
+plt.scatter(X[:, 0], X[:, 1], c=labels, s=30, cmap='viridis', label='Data Points')
+plt.scatter(centroids[:, 0], centroids[:, 1], c='red', s=200, marker='X', edgecolors='black', label='Centroids')
+
+plt.title(f"K-Means Clustering (k={k})")
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+--- Practical 9A: Principal Component Analysis (PCA) ---
+# 9A: Implement Principal Component Analysis (PCA)
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_classification
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+# 1. Generate synthetic dataset with 4 features
+X, y = make_classification(
+    n_samples=300,
+    n_features=4,
+    n_informative=3,
+    n_redundant=1,
+    n_classes=3,
+    random_state=42
+)
+
+# 2. Standardize features (mean=0, variance=1)
+X_scaled = StandardScaler().fit_transform(X)
+
+# 3. Initialize PCA to reduce data from 4D to 2D
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+# 4. Print Explained Variance
+print("--- Principal Component Analysis (PCA) ---")
+print(f"Explained Variance Ratio by Component: {pca.explained_variance_ratio_}")
+print(f"Total Explained Variance (2 Components): {sum(pca.explained_variance_ratio_) * 100:.2f}%")
+
+# 5. Visualize the reduced 2D dataset
+plt.figure(figsize=(8, 5))
+scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap='viridis', edgecolors='k', alpha=0.8)
+plt.title("PCA: 4D to 2D Feature Reduction")
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.colorbar(scatter, label="Class")
+plt.grid(True)
+plt.show()
+
+
+================================================================================
+PHASE 9: SUPERVISED MACHINE LEARNING & CLASSIFICATION
+================================================================================
+
+--- Practical 8A: Logistic Regression ---
+# 8A: Implement Logistic Regression
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# 1. Generate synthetic 2D dataset for classification
+X, y = make_classification(
+    n_samples=300,
+    n_features=2,
+    n_redundant=0,
+    n_clusters_per_class=1,
+    random_state=42
+)
+
+# 2. Split dataset into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 3. Initialize and train the Logistic Regression model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# 4. Make predictions
+y_pred = model.predict(X_test)
+
+# 5. Evaluate the model
+print("--- Logistic Regression Evaluation ---")
+print(f"Accuracy: {accuracy_score(y_test, y_pred) * 100:.2f}%\n")
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+# 6. Plot Decision Boundary
+plt.figure(figsize=(8, 5))
+
+# Create grid to plot decision boundary
+x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
+                     np.arange(y_min, y_max, 0.02))
+
+Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+Z = Z.reshape(xx.shape)
+
+plt.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.Paired)
+plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', cmap=plt.cm.Paired)
+plt.title("Logistic Regression Decision Boundary")
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.show()
+
+
+--- Practical 9B: Support Vector Machine (SVM) ---
+# P9B Implement SVM.
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+svm = SVC()
+param_grid = {
+    'C': [0.1, 1, 10, 100],
+    'gamma': [1, 0.1, 0.01, 0.001],
+    'kernel': ['rbf', 'linear']
+}
+
+grid = GridSearchCV(svm, param_grid, cv=5, refit=True, verbose=0)
+grid.fit(X_train, y_train)
+print(f"Best Parameters: {grid.best_params_}")
+
+y_pred = grid.predict(X_test)
+
+print("\n--- Model Evaluation ---")
+print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+print("\nClassification Report:\n", classification_report(y_test, y_pred, target_names=iris.target_names))
+
+print("\n--- Confusion Matrix ---")
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(6, 6))
+sns.heatmap(cm, annot=True, cmap='YlGnBu', xticklabels=iris.target_names, yticklabels=iris.target_names, fmt='d')
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+plt.show()
+
+================================================================================
+END OF LAB MANUAL
+================================================================================
